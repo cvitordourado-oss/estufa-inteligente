@@ -2,15 +2,19 @@ from getpass import getpass
 
 from services.sessao import Sessao
 from services.auth_service import AuthService, MAX_TENTATIVAS
+from services.sensor_service import SensorService
 
 
 def exibir_menu(sessao):
     """O menu muda conforme exista (ou não) um usuário autenticado."""
+
     if sessao.existe_sessao():
         usuario = sessao.usuario_atual()
+
         print(f"\n=== Estufa Inteligente | logado como {usuario.nome} ===")
         print("1 - Ver meus dados")
-        print("2 - Encerrar sessão")
+        print("2 - Cadastrar sensor")
+        print("3 - Encerrar sessão")
         print("0 - Sair do programa")
     else:
         print("\n=== Estufa Inteligente ===")
@@ -21,6 +25,7 @@ def exibir_menu(sessao):
 
 def fluxo_cadastro(auth):
     print("\n--- Cadastro de usuário ---")
+
     while True:
         nome = input("Nome: ")
         email = input("E-mail: ")
@@ -32,13 +37,13 @@ def fluxo_cadastro(auth):
         if sucesso:
             return
 
-        # Dados inválidos: informa o problema e pede os dados de novo
         if input("Deseja tentar novamente? (s/n): ").strip().lower() != "s":
             return
 
 
 def fluxo_login(auth):
     print("\n--- Login ---")
+
     auth.reiniciar_tentativas()
 
     while not auth.bloqueado():
@@ -57,20 +62,40 @@ def fluxo_login(auth):
 
 def mostrar_dados(sessao):
     usuario = sessao.usuario_atual()
+
     print("\n--- Meus dados ---")
     print(f"ID:     {usuario.id_usuario}")
     print(f"Nome:   {usuario.nome}")
     print(f"E-mail: {usuario.email}")
 
 
+def cadastrar_sensor(sessao):
+    usuario = sessao.usuario_atual()
+
+    print("\n--- Cadastro de Sensor ---")
+
+    tipo = input("Tipo: ").strip()
+    descricao = input("Descrição: ").strip()
+    unidade = input("Unidade de medida: ").strip()
+
+    SensorService.cadastrar(
+        tipo,
+        descricao,
+        unidade,
+        usuario
+    )
+
+
 def encerrar_sessao(sessao):
-    # Etapa 4: verifica -> encerra -> limpa os dados -> volta ao menu inicial
+
     if not sessao.existe_sessao():
         print("Não há sessão ativa.")
         return
 
     nome = sessao.usuario_atual().nome
+
     sessao.encerrar()
+
     print(f"Sessão de {nome} encerrada. Voltando ao menu inicial.")
 
 
@@ -80,6 +105,7 @@ def main():
 
     while True:
         exibir_menu(sessao)
+
         opcao = input("Escolha uma opção: ").strip()
 
         if opcao == "0":
@@ -87,17 +113,27 @@ def main():
             break
 
         if sessao.existe_sessao():
+
             if opcao == "1":
                 mostrar_dados(sessao)
+
             elif opcao == "2":
+                cadastrar_sensor(sessao)
+
+            elif opcao == "3":
                 encerrar_sessao(sessao)
+
             else:
                 print("Opção inválida.")
+
         else:
+
             if opcao == "1":
                 fluxo_cadastro(auth)
+
             elif opcao == "2":
                 fluxo_login(auth)
+
             else:
                 print("Opção inválida.")
 
