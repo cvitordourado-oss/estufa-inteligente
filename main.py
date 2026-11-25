@@ -3,6 +3,7 @@ from getpass import getpass
 from services.sessao import Sessao
 from services.auth_service import AuthService, MAX_TENTATIVAS
 from services.sensor_service import SensorService
+from services.medicao_service import MedicaoService
 
 
 def exibir_menu(sessao):
@@ -16,7 +17,8 @@ def exibir_menu(sessao):
         print("2 - Cadastrar sensor")
         print("3 - Listar sensores")
         print("4 - Ativar ou desativar sensor")
-        print("5 - Encerrar sessão")
+        print("5 - Cadastrar medição")
+        print("6 - Encerrar sessão")
         print("0 - Sair do programa")
     else:
         print("\n=== Estufa Inteligente ===")
@@ -119,6 +121,20 @@ def alterar_status_sensor():
     )
 
 
+def cadastrar_medicao():
+    print("\n--- Cadastro de Medição ---")
+
+    SensorService.listar()
+
+    id_sensor = input("\nDigite o ID do sensor: ").strip()
+    valor = input("Digite o valor da medição: ").strip()
+
+    MedicaoService.cadastrar(
+        id_sensor,
+        valor
+    )
+
+
 def encerrar_sessao(sessao):
     if not sessao.existe_sessao():
         print("Não há sessão ativa.")
@@ -160,6 +176,9 @@ def main():
                 alterar_status_sensor()
 
             elif opcao == "5":
+                cadastrar_medicao()
+
+            elif opcao == "6":
                 encerrar_sessao(sessao)
 
             else:
