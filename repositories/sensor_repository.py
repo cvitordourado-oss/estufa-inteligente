@@ -86,3 +86,37 @@ class SensorRepository:
 
             if conexao is not None and conexao.is_connected():
                 conexao.close()
+
+    @staticmethod
+    def alterar_status(id_sensor, novo_status):
+        conexao = None
+        cursor = None
+
+        try:
+            conexao = Conexao.conectar()
+            cursor = conexao.cursor()
+
+            sql = """
+                UPDATE sensor
+                SET statusSensor = %s
+                WHERE idSensor = %s
+            """
+
+            cursor.execute(sql, (novo_status, id_sensor))
+            conexao.commit()
+
+            return cursor.rowcount > 0
+
+        except Exception as erro:
+            if conexao is not None:
+                conexao.rollback()
+
+            print(f"Erro ao alterar o status do sensor: {erro}")
+            return False
+
+        finally:
+            if cursor is not None:
+                cursor.close()
+
+            if conexao is not None and conexao.is_connected():
+                conexao.close()

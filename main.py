@@ -15,7 +15,8 @@ def exibir_menu(sessao):
         print("1 - Ver meus dados")
         print("2 - Cadastrar sensor")
         print("3 - Listar sensores")
-        print("4 - Encerrar sessão")
+        print("4 - Ativar ou desativar sensor")
+        print("5 - Encerrar sessão")
         print("0 - Sair do programa")
     else:
         print("\n=== Estufa Inteligente ===")
@@ -38,7 +39,11 @@ def fluxo_cadastro(auth):
         if sucesso:
             return
 
-        if input("Deseja tentar novamente? (s/n): ").strip().lower() != "s":
+        tentar_novamente = input(
+            "Deseja tentar novamente? (s/n): "
+        ).strip().lower()
+
+        if tentar_novamente != "s":
             return
 
 
@@ -57,7 +62,11 @@ def fluxo_login(auth):
         if sucesso:
             return
 
-    print(f"Você errou {MAX_TENTATIVAS} vezes. Voltando ao menu inicial.")
+    print(
+        f"Você errou {MAX_TENTATIVAS} vezes. "
+        "Voltando ao menu inicial."
+    )
+
     auth.reiniciar_tentativas()
 
 
@@ -91,6 +100,25 @@ def listar_sensores():
     SensorService.listar()
 
 
+def alterar_status_sensor():
+    print("\n--- Ativar ou desativar sensor ---")
+
+    SensorService.listar()
+
+    id_sensor = input("\nDigite o ID do sensor: ").strip()
+
+    print("\nEscolha o novo status:")
+    print("1 - Ativo")
+    print("2 - Inativo")
+
+    opcao_status = input("Escolha uma opção: ").strip()
+
+    SensorService.alterar_status(
+        id_sensor,
+        opcao_status
+    )
+
+
 def encerrar_sessao(sessao):
     if not sessao.existe_sessao():
         print("Não há sessão ativa.")
@@ -99,7 +127,10 @@ def encerrar_sessao(sessao):
     nome = sessao.usuario_atual().nome
     sessao.encerrar()
 
-    print(f"Sessão de {nome} encerrada. Voltando ao menu inicial.")
+    print(
+        f"Sessão de {nome} encerrada. "
+        "Voltando ao menu inicial."
+    )
 
 
 def main():
@@ -126,6 +157,9 @@ def main():
                 listar_sensores()
 
             elif opcao == "4":
+                alterar_status_sensor()
+
+            elif opcao == "5":
                 encerrar_sessao(sessao)
 
             else:

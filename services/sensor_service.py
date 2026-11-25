@@ -53,6 +53,47 @@ class SensorService:
             print(f"Descrição: {sensor['descricao']}")
             print(f"Unidade: {sensor['unidadeMedida']}")
             print(f"Status: {status}")
-            print(f"Cadastrado pelo usuário: {sensor['id_usuario_cadastro']}")
+            print(
+                f"Cadastrado pelo usuário: "
+                f"{sensor['id_usuario_cadastro']}"
+            )
 
         print("\n----------------------------")
+
+    @staticmethod
+    def alterar_status(id_sensor, opcao_status):
+
+        try:
+            id_sensor = int(id_sensor)
+        except ValueError:
+            print("O ID do sensor deve ser um número.")
+            return
+
+        if id_sensor <= 0:
+            print("O ID do sensor deve ser maior que zero.")
+            return
+
+        if opcao_status == "1":
+            novo_status = 1
+            nome_status = "Ativo"
+
+        elif opcao_status == "2":
+            novo_status = 0
+            nome_status = "Inativo"
+
+        else:
+            print("Opção de status inválida.")
+            return
+
+        alterado = SensorRepository.alterar_status(
+            id_sensor,
+            novo_status
+        )
+
+        if alterado:
+            print(
+                f"Sensor {id_sensor} alterado para "
+                f"{nome_status} com sucesso!"
+            )
+        else:
+            print("Sensor não encontrado ou o status já era o escolhido.")
