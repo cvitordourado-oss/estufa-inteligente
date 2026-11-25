@@ -6,7 +6,7 @@ from services.sensor_service import SensorService
 
 
 def exibir_menu(sessao):
-    """O menu muda conforme exista (ou não) um usuário autenticado."""
+    """O menu muda conforme exista ou não um usuário autenticado."""
 
     if sessao.existe_sessao():
         usuario = sessao.usuario_atual()
@@ -14,7 +14,8 @@ def exibir_menu(sessao):
         print(f"\n=== Estufa Inteligente | logado como {usuario.nome} ===")
         print("1 - Ver meus dados")
         print("2 - Cadastrar sensor")
-        print("3 - Encerrar sessão")
+        print("3 - Listar sensores")
+        print("4 - Encerrar sessão")
         print("0 - Sair do programa")
     else:
         print("\n=== Estufa Inteligente ===")
@@ -86,14 +87,16 @@ def cadastrar_sensor(sessao):
     )
 
 
-def encerrar_sessao(sessao):
+def listar_sensores():
+    SensorService.listar()
 
+
+def encerrar_sessao(sessao):
     if not sessao.existe_sessao():
         print("Não há sessão ativa.")
         return
 
     nome = sessao.usuario_atual().nome
-
     sessao.encerrar()
 
     print(f"Sessão de {nome} encerrada. Voltando ao menu inicial.")
@@ -113,7 +116,6 @@ def main():
             break
 
         if sessao.existe_sessao():
-
             if opcao == "1":
                 mostrar_dados(sessao)
 
@@ -121,13 +123,15 @@ def main():
                 cadastrar_sensor(sessao)
 
             elif opcao == "3":
+                listar_sensores()
+
+            elif opcao == "4":
                 encerrar_sessao(sessao)
 
             else:
                 print("Opção inválida.")
 
         else:
-
             if opcao == "1":
                 fluxo_cadastro(auth)
 
