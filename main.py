@@ -18,7 +18,8 @@ def exibir_menu(sessao):
         print("3 - Listar sensores")
         print("4 - Ativar ou desativar sensor")
         print("5 - Cadastrar medição")
-        print("6 - Encerrar sessão")
+        print("6 - Histórico de medições")
+        print("7 - Encerrar sessão")
         print("0 - Sair do programa")
     else:
         print("\n=== Estufa Inteligente ===")
@@ -126,13 +127,30 @@ def cadastrar_medicao():
 
     SensorService.listar()
 
-    id_sensor = input("\nDigite o ID do sensor: ").strip()
-    valor = input("Digite o valor da medição: ").strip()
+    while True:
+        id_sensor = input("\nDigite o ID do sensor: ").strip()
+        valor = input("Digite o valor da medição: ").strip()
 
-    MedicaoService.cadastrar(
-        id_sensor,
-        valor
-    )
+        sucesso = MedicaoService.cadastrar(
+            id_sensor,
+            valor
+        )
+
+        if sucesso:
+            return
+
+        tentar_novamente = input(
+            "\nDeseja tentar novamente? (s/n): "
+        ).strip().lower()
+
+        if tentar_novamente != "s":
+            return
+
+        SensorService.listar()
+
+
+def listar_medicoes():
+    MedicaoService.listar()
 
 
 def encerrar_sessao(sessao):
@@ -163,6 +181,7 @@ def main():
             break
 
         if sessao.existe_sessao():
+
             if opcao == "1":
                 mostrar_dados(sessao)
 
@@ -179,12 +198,16 @@ def main():
                 cadastrar_medicao()
 
             elif opcao == "6":
+                listar_medicoes()
+
+            elif opcao == "7":
                 encerrar_sessao(sessao)
 
             else:
                 print("Opção inválida.")
 
         else:
+
             if opcao == "1":
                 fluxo_cadastro(auth)
 
