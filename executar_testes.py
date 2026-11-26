@@ -11,6 +11,8 @@ import uuid
 
 import bcrypt
 
+from database.conexao import Conexao
+from services.medicao_service import MedicaoService
 from repositories.usuario_repository import UsuarioRepository
 from services.auth_service import AuthService, MAX_TENTATIVAS
 from services.sessao import Sessao
@@ -30,6 +32,100 @@ def verificar(descricao, condicao, detalhe=""):
 def novo_servico():
     sessao = Sessao()
     return sessao, AuthService(sessao)
+def criar_sensor_teste(id_usuario, sufixo):
+    conexao = None
+    cursor = None
+
+    try:
+        conexao = Conexao.conectar()
+        cursor = conexao.cursor()
+
+        sql = """
+            INSERT INTO sensor
+                (
+                    tipo,
+                    descricao,
+                    unidadeMedida,
+                    statusSensor,
+                    id_usuario_cadastro
+                )
+            VALUES (%s, %s, %s, %s, %s)
+        """
+
+        cursor.execute(
+            sql,
+            (
+                "Temperatura",
+                f"Sensor de teste {sufixo}",
+                "C",
+                1,
+                id_usuario
+            )
+        )
+
+        conexao.commit()
+        return cursor.lastrowid
+
+    finally:
+        if cursor is not None:
+            cursor.close()
+
+        if conexao is not None and conexao.is_connected():
+            conexao.close()
+
+
+def buscar_medicoes_do_sensor(id_sensor):
+    conexao = None
+    cursor = None
+
+    try:
+        conexao = Conexao.conectar()
+        cursor = conexao.cursor(dictionary=True)
+
+        sql = """
+            SELECT idMedicao, id_Sensor, dataHora, valor
+            FROM medicao
+            WHERE id_Sensor = %s
+            ORDER BY idMedicao
+        """
+
+        cursor.execute(sql, (id_sensor,))
+        return cursor.fetchall()
+
+    finally:
+        if cursor is not None:
+            cursor.close()
+
+        if conexao is not None and conexao.is_connected():
+            conexao.close()
+
+
+def apagar_sensor_teste(id_sensor):
+    conexao = None
+    cursor = None
+
+    try:
+        conexao = Conexao.conectar()
+        cursor = conexao.cursor()
+
+        cursor.execute(
+            "DELETE FROM medicao WHERE id_Sensor = %s",
+            (id_sensor,)
+        )
+
+        cursor.execute(
+            "DELETE FROM sensor WHERE idSensor = %s",
+            (id_sensor,)
+        )
+
+        conexao.commit()
+
+    finally:
+        if cursor is not None:
+            cursor.close()
+
+        if conexao is not None and conexao.is_connected():
+            conexao.close()
 
 
 def executar():
@@ -38,6 +134,7 @@ def executar():
     email_injecao = f"injecao_{sufixo}@estufa.com"
     senha = "Senha@123"
     criados = [email, email_injecao]
+    id_sensor_teste = None
 
     try:
         # 1. Cadastro com todos os dados preenchidos
@@ -149,9 +246,106 @@ def executar():
             and UsuarioRepository.email_existe(email),
             msg,
         )
+        # 10. Testes de cadastro de medições
+        id_sensor_teste = criar_sensor_teste(
+            salvo.id_usuario,
+            sufixo
+        )
+
+        verificar(
+            "10. Sensor de teste criado no MySQL",
+            isinstance(id_sensor_teste, int) and id_sensor_teste > 0,
+            f"ID do sensor = {id_sensor_teste}",
+        )
+
+        ok = MedicaoService.cadastrar(
+            99999999,
+            "25.50"
+        )
+
+        verificar(
+            "10b. Medição recusada para sensor inexistente",
+            ok is False,
+        )
+
+        ok = MedicaoService.cadastrar(
+            id_sensor_teste,
+            ""
+        )
+
+        verificar(
+            "10c. Medição recusada com valor vazio",
+            ok is False,
+        )
+
+        ok = MedicaoService.cadastrar(
+            id_sensor_teste,
+            "abc"
+        )
+
+        verificar(
+            "10d. Medição recusada com valor não numérico",
+            ok is False,
+        )
+
+        ok = MedicaoService.cadastrar(
+            id_sensor_teste,
+            "25.50"
+        )
+
+        verificar(
+            "10e. Medição válida cadastrada",
+            ok is True,
+        )
+
+        ok = MedicaoService.cadastrar(
+            id_sensor_teste,
+            "30,75"
+        )
+
+        verificar(
+            "10f. Valor com vírgula é aceito",
+            ok is True,
+        )
+
+        medicoes = buscar_medicoes_do_sensor(
+            id_sensor_teste
+        )
+
+        verificar(
+            "10g. Histórico preserva as duas medições",
+            len(medicoes) == 2,
+            f"Quantidade encontrada = {len(medicoes)}",
+        )
+
+        verificar(
+            "10h. MySQL gerou ID, data e hora automaticamente",
+            all(
+                medicao["idMedicao"] is not None
+                and medicao["dataHora"] is not None
+                for medicao in medicoes
+            ),
+        )
+
+        verificar(
+            "10i. Medições ficaram vinculadas ao sensor correto",
+            all(
+                medicao["id_Sensor"] == id_sensor_teste
+                for medicao in medicoes
+            ),
+        )
 
     finally:
-        for e in criados:
+         if id_sensor_teste is not None:
+            try:
+                apagar_sensor_teste(id_sensor_teste)
+            except Exception as erro:
+                print(
+                    "(aviso) não consegui apagar o sensor "
+                    f"de teste {id_sensor_teste}: {erro}"
+                )
+
+    for e in criados:
             try:
                 UsuarioRepository.excluir_por_email(e)
             except Exception as erro:  # limpeza nunca deve esconder o resultado
